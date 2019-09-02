@@ -1,0 +1,20 @@
+<idea-plugin>
+    <id>ca.olivier.simple-gdb-remote-debug-plugin</id>
+    <name>Simple GDB Remote Debug</name>
+    <version>1.0.0</version>
+    <vendor email="olivier.allaire@gmail.com" url="https://github.com/oallaire/simple-gdb-remote-debug-plugin">Olivier Allaire</vendor>
+
+    <description><![CDATA[
+    GDB remote debug plugin for CLion that also starts the GDB server, shows application output and kills application on stop.
+    ]]></description>
+
+    <depends>com.intellij.modules.clion</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <configurationType implementation="ca.olivier.clion.SimpleGdbRemoteDebugConfigurationType"
+                           id="ca.olivier.simplegdbremotedebug.conf.type" />
+    </extensions>
+
+    <actions>
+    </actions>
+</idea-plugin>
