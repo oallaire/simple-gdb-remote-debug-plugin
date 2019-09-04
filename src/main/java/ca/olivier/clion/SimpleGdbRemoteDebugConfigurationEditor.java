@@ -162,7 +162,7 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
                 if (bundledAdded) {
                     continue;
                 }
-                item.displayName = "Bundled GDB";
+                item.displayName = SimpleGdbRemoteDebugConfiguration.BUNDLED_GDB_NAME;
                 stringGdbComboBox.addItem(item);
                 bundledAdded = true;
             } else {
@@ -172,7 +172,7 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         }
         GdbComboBoxItem customGdbItem = new GdbComboBoxItem();
         customGdbItem.toolchain = null;
-        customGdbItem.displayName = "Custom GDB";
+        customGdbItem.displayName = SimpleGdbRemoteDebugConfiguration.CUSTOM_GDB_NAME;
         stringGdbComboBox.addItem(customGdbItem);
         gdbPanel.add(stringGdbComboBox);
         return gdbPanel;

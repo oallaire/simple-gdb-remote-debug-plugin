@@ -4,18 +4,33 @@ import com.intellij.credentialStore.CredentialAttributes;
 import com.intellij.credentialStore.Credentials;
 import com.intellij.execution.Executor;
 import com.intellij.execution.configurations.ConfigurationFactory;
+import com.intellij.execution.configurations.RuntimeConfigurationException;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.InvalidDataException;
+import com.intellij.openapi.util.WriteExternalException;
 import com.jetbrains.cidr.cpp.execution.CMakeAppRunConfiguration;
 import com.jetbrains.cidr.execution.CidrCommandLineState;
 import com.jetbrains.cidr.execution.CidrExecutableDataHolder;
+import org.jdom.Element;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration implements CidrExecutableDataHolder {
 
-    private static final String hostPasswordServiceName = "ca.olivier : SGRDRegistration";
+    static final String CUSTOM_GDB_NAME = "Custom GDB";
+    static final String BUNDLED_GDB_NAME = "Bundled GDB";
+
+    private static final String HOST_PASSWORD_SERVICE_NAME = "ca.olivier : SGRDRegistration";
+
+    private static final String TAG_SGRD = "sgrd";
+    private static final String ATTR_SELECTED_GDB = "selected-gdb";
+    private static final String ATTR_CUSTOM_GDB = "custom-gdb";
+    private static final String ATTR_SYSROOT_FOLDER = "sysroot-folder";
+    private static final String ATTR_HOST = "host";
+    private static final String ATTR_USER = "user";
+    private static final String ATTR_REMOTE_FOLDER = "remote-folder";
 
     private String selectedGdb;
     private String customGdbBin;
@@ -24,74 +39,138 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
     private String user;
     private String remoteFolder;
 
-    public SimpleGdbRemoteDebugConfiguration(Project project, ConfigurationFactory factory, String name) {
+    SimpleGdbRemoteDebugConfiguration(Project project, ConfigurationFactory factory, String name) {
         super(project, factory, name);
     }
 
+    @Nullable
     @Override
-    public @Nullable CidrCommandLineState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment env) {
-//        return new CidrCommandLineState(env, );
-        return null;
+    public CidrCommandLineState getState(@NotNull Executor executor, @NotNull ExecutionEnvironment environment) {
+        return new CidrCommandLineState(environment, new SimpleGdbRemoteDebugLauncher(this));
     }
 
-    public String getSelectedGdb() {
+    @Override
+    public void readExternal(@NotNull Element parentElement) throws InvalidDataException {
+        super.readExternal(parentElement);
+        Element element = parentElement.getChild(TAG_SGRD);
+        if(element!=null) {
+            selectedGdb = element.getAttributeValue(ATTR_SELECTED_GDB);
+            customGdbBin = element.getAttributeValue(ATTR_CUSTOM_GDB);
+            sysrootFolder = element.getAttributeValue(ATTR_SYSROOT_FOLDER);
+            host = element.getAttributeValue(ATTR_HOST);
+            user = element.getAttributeValue(ATTR_USER);
+            remoteFolder = element.getAttributeValue(ATTR_REMOTE_FOLDER);
+        }
+    }
+
+    @Override
+    public void writeExternal(@NotNull Element parentElement) throws WriteExternalException {
+        super.writeExternal(parentElement);
+        Element element = new Element(TAG_SGRD);
+        parentElement.addContent(element);
+        if (selectedGdb != null) {
+            element.setAttribute(ATTR_SELECTED_GDB, selectedGdb);
+        }
+        if (customGdbBin != null) {
+            element.setAttribute(ATTR_CUSTOM_GDB, customGdbBin);
+        }
+        if (sysrootFolder != null) {
+            element.setAttribute(ATTR_SYSROOT_FOLDER, sysrootFolder);
+        }
+        if (host != null) {
+            element.setAttribute(ATTR_HOST, host);
+        }
+        if (user != null) {
+            element.setAttribute(ATTR_USER, user);
+        }
+        if (remoteFolder != null) {
+            element.setAttribute(ATTR_REMOTE_FOLDER, remoteFolder);
+        }
+    }
+
+    @Override
+    public void checkConfiguration() throws RuntimeConfigurationException {
+        super.checkConfiguration();
+        if (selectedGdb == null || selectedGdb.isEmpty()) {
+            throw  new RuntimeConfigurationException("GDB should be selected.");
+        }
+        if (selectedGdb.equals(SimpleGdbRemoteDebugConfiguration.CUSTOM_GDB_NAME)) {
+            if (customGdbBin == null || customGdbBin.isEmpty()) {
+                throw new RuntimeConfigurationException("Custom GDB path not set.");
+            }
+        }
+        if (sysrootFolder == null || sysrootFolder.isEmpty()) {
+            throw  new RuntimeConfigurationException("Sysroot folder not set.");
+        }
+        if (host == null || host.isEmpty()) {
+            throw  new RuntimeConfigurationException("Host not set.");
+        }
+        if (user == null || user.isEmpty()) {
+            throw  new RuntimeConfigurationException("User not set.");
+        }
+        if (remoteFolder == null || remoteFolder.isEmpty()) {
+            throw  new RuntimeConfigurationException("Remote folder not set.");
+        }
+    }
+
+    String getSelectedGdb() {
         return selectedGdb;
     }
 
-    public void setSelectedGdb(String selectedGdb) {
+    void setSelectedGdb(String selectedGdb) {
         this.selectedGdb = selectedGdb;
     }
 
-    public String getCustomGdbBin() {
+    String getCustomGdbBin() {
         return customGdbBin;
     }
 
-    public void setCustomGdbBin(String customGdbBin) {
+    void setCustomGdbBin(String customGdbBin) {
         this.customGdbBin = customGdbBin;
     }
 
-    public String getSysrootFolder() {
+    String getSysrootFolder() {
         return sysrootFolder;
     }
 
-    public void setSysrootFolder(String sysrootFolder) {
+    void setSysrootFolder(String sysrootFolder) {
         this.sysrootFolder = sysrootFolder;
     }
 
-    public String getHost() {
+    String getHost() {
         return host;
     }
 
-    public void setHost(String host) {
+    void setHost(String host) {
         this.host = host;
     }
 
-    public String getHostPassword() {
-        CredentialAttributes ca = new CredentialAttributes(SimpleGdbRemoteDebugConfiguration.hostPasswordServiceName,
+    String getHostPassword() {
+        CredentialAttributes ca = new CredentialAttributes(SimpleGdbRemoteDebugConfiguration.HOST_PASSWORD_SERVICE_NAME,
                 getUser(), null, false);
         return PasswordSafe.getInstance().getPassword(ca);
     }
 
-    public void setHostPassword(String password) {
-        CredentialAttributes ca = new CredentialAttributes(SimpleGdbRemoteDebugConfiguration.hostPasswordServiceName,
+    void setHostPassword(String password) {
+        CredentialAttributes ca = new CredentialAttributes(SimpleGdbRemoteDebugConfiguration.HOST_PASSWORD_SERVICE_NAME,
                 getUser(), null, false);
         Credentials c = new Credentials(ca.getUserName(), password);
         PasswordSafe.getInstance().set(ca, c);
     }
 
-    public String getUser() {
+    String getUser() {
         return user;
     }
 
-    public void setUser(String user) {
+    void setUser(String user) {
         this.user = user;
     }
 
-    public String getRemoteFolder() {
+    String getRemoteFolder() {
         return remoteFolder;
     }
 
-    public void setRemoteFolder(String remoteFolder) {
+    void setRemoteFolder(String remoteFolder) {
         this.remoteFolder = remoteFolder;
     }
 }
