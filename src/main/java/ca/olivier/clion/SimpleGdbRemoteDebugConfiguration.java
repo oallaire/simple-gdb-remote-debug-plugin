@@ -27,6 +27,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
     private static final String TAG_SGRD = "sgrd";
     private static final String ATTR_SELECTED_GDB = "selected-gdb";
     private static final String ATTR_CUSTOM_GDB = "custom-gdb";
+    private static final String ATTR_GDB_PORT = "gdb-port";
     private static final String ATTR_SYSROOT_FOLDER = "sysroot-folder";
     private static final String ATTR_HOST = "host";
     private static final String ATTR_USER = "user";
@@ -34,6 +35,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
 
     private String selectedGdb;
     private String customGdbBin;
+    private String gdbPort;
     private String sysrootFolder;
     private String host;
     private String user;
@@ -56,6 +58,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
         if(element!=null) {
             selectedGdb = element.getAttributeValue(ATTR_SELECTED_GDB);
             customGdbBin = element.getAttributeValue(ATTR_CUSTOM_GDB);
+            gdbPort = element.getAttributeValue(ATTR_GDB_PORT);
             sysrootFolder = element.getAttributeValue(ATTR_SYSROOT_FOLDER);
             host = element.getAttributeValue(ATTR_HOST);
             user = element.getAttributeValue(ATTR_USER);
@@ -73,6 +76,9 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
         }
         if (customGdbBin != null) {
             element.setAttribute(ATTR_CUSTOM_GDB, customGdbBin);
+        }
+        if (gdbPort != null) {
+            element.setAttribute(ATTR_GDB_PORT, gdbPort);
         }
         if (sysrootFolder != null) {
             element.setAttribute(ATTR_SYSROOT_FOLDER, sysrootFolder);
@@ -98,6 +104,9 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
             if (customGdbBin == null || customGdbBin.isEmpty()) {
                 throw new RuntimeConfigurationException("Custom GDB path not set.");
             }
+        }
+        if (gdbPort == null || gdbPort.isEmpty()) {
+            throw  new RuntimeConfigurationException("GDB port not set.");
         }
         if (sysrootFolder == null || sysrootFolder.isEmpty()) {
             throw  new RuntimeConfigurationException("Sysroot folder not set.");
@@ -172,5 +181,13 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
 
     void setRemoteFolder(String remoteFolder) {
         this.remoteFolder = remoteFolder;
+    }
+
+    String getGdbPort() {
+        return gdbPort;
+    }
+
+    void setGdbPort(String gdbPort) {
+        this.gdbPort = gdbPort;
     }
 }

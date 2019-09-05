@@ -1,20 +1,16 @@
 package ca.olivier.clion;
 
-import com.intellij.execution.process.BaseProcessHandler;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.process.ProcessOutputTypes;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.remote.RemoteProcess;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
-import java.nio.charset.Charset;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -25,6 +21,7 @@ public class RemoteProcessHandler extends ProcessHandler {
     private Future<?> runningProcess;
     private SimpleGdbRemoteDebugConfiguration sgrdConfig;
     private File fileToRun;
+    private Process debugProcess;
 
     private final DelegateOrDropOutputStream delegateOrDropOutput = new DelegateOrDropOutputStream();
 
@@ -46,19 +43,25 @@ public class RemoteProcessHandler extends ProcessHandler {
         runningProcess = Executors.newSingleThreadExecutor().submit(() -> {
             notifyTextAvailable("Going to run on " + sgrdConfig.getHost() + " with " + fileToRun.getName() + "\n",
                     ProcessOutputTypes.STDERR);
-            int result = executeCommand(syncCommand(requiredFiles), SYSTEM);
+            List<VirtualFile> filesToSync = new ArrayList<>();
+            filesToSync.add(VfsUtil.findFileByIoFile(fileToRun, true));
+            int result = executeCommand(syncCommand(filesToSync));
             if (result != 0) {
-                notifyTextAvailable("Sync failed: " + result + "\n", STDERR);
+                notifyTextAvailable("Sync failed: " + result + "\n", ProcessOutputTypes.STDERR);
                 throw new RuntimeException("Sync failed");
             }
-
-            if (!debugJvmArgs.isEmpty()) {
-                debugTunnel = execute(new String[]{"ssh", userName.map(u -> u + "@").orElse("") + hostName, "-L", "5005:localhost:5005"}, SYSTEM);
+            debugProcess = execute(gdbServerCommand(), ProcessOutputTypes.STDOUT);
+            try {
+                result = debugProcess.waitFor();
+            } catch (InterruptedException x) {
+                try {
+                    result = debugProcess.destroyForcibly().waitFor();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
-
-            int r = executeCommand(javaCommand(requiredFiles), STDOUT);
             destroySshTunnelIfPresent();
-            notifyProcessTerminated(r);
+            notifyProcessTerminated(result);
         });
     }
 
@@ -84,8 +87,8 @@ public class RemoteProcessHandler extends ProcessHandler {
         return delegateOrDropOutput;
     }
 
-    private int executeCommand(String[] cmd, Key outType) {
-        Process process = execute(cmd, outType);
+    private int executeCommand(String[] cmd) {
+        Process process = execute(cmd, ProcessOutputTypes.SYSTEM);
 
         try {
             return process.waitFor();
@@ -146,6 +149,27 @@ public class RemoteProcessHandler extends ProcessHandler {
         cmdLine.add("--delete");
 
         return cmdLine.toArray(new String[0]);
+    }
+
+    @NotNull
+    private String[] gdbServerCommand() {
+        List<String> cmdLine = new ArrayList<>();
+        cmdLine.add("ssh");
+        cmdLine.add(sgrdConfig.getUser() + "@" + sgrdConfig.getHost());
+        cmdLine.add("gdbserver");
+        cmdLine.add(":" + sgrdConfig.getGdbPort());
+        cmdLine.add(sgrdConfig.getRemoteFolder() + "/" + fileToRun.getName());
+        return cmdLine.toArray(new String[0]);
+    }
+
+    private void destroySshTunnelIfPresent() {
+        try {
+            if (debugProcess != null) {
+                debugProcess.destroyForcibly().waitFor();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static class DelegateOrDropOutputStream extends OutputStream {

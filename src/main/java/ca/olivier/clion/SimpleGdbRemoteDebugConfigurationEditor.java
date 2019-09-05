@@ -26,6 +26,7 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
     private FileChooseInput sysrootFolderInput;
     private FileChooseInput customGdbBinInput;
     private JComboBox<GdbComboBoxItem> stringGdbComboBox;
+    private TextField gdbPort;
     private TextField hostText;
     private TextField userText;
     private PasswordFieldPanel hostPassword;
@@ -47,6 +48,8 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
 
         String customGdbBin = customGdbBinInput.getText().trim();
         sgrdConfig.setCustomGdbBin(customGdbBin.isEmpty() ? null : customGdbBin);
+
+        sgrdConfig.setGdbPort(gdbPort.getText());
 
         String sysrootFolder = sysrootFolderInput.getText().trim();
         sgrdConfig.setSysrootFolder(sysrootFolder.isEmpty() ? null : sysrootFolder);
@@ -73,6 +76,8 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         }
 
         customGdbBinInput.setText(sgrdConfig.getCustomGdbBin());
+
+        gdbPort.setText(sgrdConfig.getGdbPort());
 
         sysrootFolderInput.setText(sgrdConfig.getSysrootFolder());
 
@@ -103,6 +108,10 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
 
         JPanel sysrootPanel = createSysrootSelector(panel, gridBag);
         panel.add(sysrootPanel, gridBag.next().coverLine());
+
+        panel.add(new JLabel("GDB Port:"), gridBag.nextLine().next());
+        gdbPort = new TextField();
+        panel.add(gdbPort, gridBag.next().coverLine());
 
         panel.add(new JLabel("Host:"), gridBag.nextLine().next());
         hostText = new TextField();
