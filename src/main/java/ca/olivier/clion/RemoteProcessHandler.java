@@ -25,7 +25,7 @@ public class RemoteProcessHandler extends ProcessHandler {
 
     private final DelegateOrDropOutputStream delegateOrDropOutput = new DelegateOrDropOutputStream();
 
-    public RemoteProcessHandler(SimpleGdbRemoteDebugConfiguration sgrdConfig, File fileToRun) {
+    RemoteProcessHandler(SimpleGdbRemoteDebugConfiguration sgrdConfig, File fileToRun) {
         this.sgrdConfig = sgrdConfig;
         this.fileToRun = fileToRun;
     }
@@ -50,18 +50,23 @@ public class RemoteProcessHandler extends ProcessHandler {
                 notifyTextAvailable("Sync failed: " + result + "\n", ProcessOutputTypes.STDERR);
                 throw new RuntimeException("Sync failed");
             }
+            int debugResult;
             debugProcess = execute(gdbServerCommand(), ProcessOutputTypes.STDOUT);
             try {
-                result = debugProcess.waitFor();
+                debugResult = debugProcess.waitFor();
             } catch (InterruptedException x) {
                 try {
-                    result = debugProcess.destroyForcibly().waitFor();
+                    debugResult = debugProcess.destroyForcibly().waitFor();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
+            result = executeCommand(killProcessCommand());
+            if (result != 0) {
+                notifyTextAvailable("Kill failed: " + result + "\n", ProcessOutputTypes.STDOUT);
+            }
             destroySshTunnelIfPresent();
-            notifyProcessTerminated(result);
+            notifyProcessTerminated(debugResult);
         });
     }
 
@@ -159,6 +164,17 @@ public class RemoteProcessHandler extends ProcessHandler {
         cmdLine.add("gdbserver");
         cmdLine.add(":" + sgrdConfig.getGdbPort());
         cmdLine.add(sgrdConfig.getRemoteFolder() + "/" + fileToRun.getName());
+        return cmdLine.toArray(new String[0]);
+    }
+
+    @NotNull
+    private String[] killProcessCommand() {
+        List<String> cmdLine = new ArrayList<>();
+        cmdLine.add("ssh");
+        cmdLine.add(sgrdConfig.getUser() + "@" + sgrdConfig.getHost());
+        cmdLine.add("killall");
+        cmdLine.add("-9");
+        cmdLine.add(fileToRun.getName());
         return cmdLine.toArray(new String[0]);
     }
 

@@ -2,8 +2,11 @@ package ca.olivier.clion;
 
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.ExecutionTarget;
+import com.intellij.execution.RunContentExecutor;
 import com.intellij.execution.configurations.CommandLineState;
 import com.intellij.execution.filters.Filter;
+import com.intellij.execution.process.ProcessAdapter;
+import com.intellij.execution.process.ProcessEvent;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.openapi.project.Project;
 import com.intellij.xdebugger.XDebugSession;
@@ -22,6 +25,7 @@ import java.io.File;
 public class SimpleGdbRemoteDebugLauncher extends CidrLauncher {
 
     private final SimpleGdbRemoteDebugConfiguration sgrdConfiguration;
+    private ProcessHandler gdbServerProcess;
 
     SimpleGdbRemoteDebugLauncher(SimpleGdbRemoteDebugConfiguration simpleGdbRemoteDebugConfiguration) {
         this.sgrdConfiguration = simpleGdbRemoteDebugConfiguration;
@@ -29,6 +33,8 @@ public class SimpleGdbRemoteDebugLauncher extends CidrLauncher {
 
     @Override
     protected ProcessHandler createProcess(@NotNull CommandLineState commandLineState) throws ExecutionException {
+        // FIXME - I think this is the run button. This process should simply start the bin remotely I think if not
+        //  nothing at all.
         // Create process handler
         ExecutionTarget executionTarget = commandLineState.getExecutionTarget();
         CMakeAppRunConfiguration.BuildAndRunConfigurations runConfigurations;
@@ -37,6 +43,29 @@ public class SimpleGdbRemoteDebugLauncher extends CidrLauncher {
             throw new ExecutionException("Failed to find " + executionTarget.getDisplayName() + " configuration.");
         }
         return new RemoteProcessHandler(sgrdConfiguration, runConfigurations.getRunFile());
+    }
+
+    @NotNull
+    @Override
+    public CidrDebugProcess startDebugProcess(@NotNull CommandLineState commandLineState,
+                                              @NotNull XDebugSession xDebugSession) throws ExecutionException {
+        xDebugSession.stop();
+        // Create process handler
+        ExecutionTarget executionTarget = commandLineState.getExecutionTarget();
+        CMakeAppRunConfiguration.BuildAndRunConfigurations runConfigurations;
+        runConfigurations = sgrdConfiguration.getBuildAndRunConfigurations(executionTarget);
+        if (runConfigurations == null) {
+            throw new ExecutionException("Failed to find " + executionTarget.getDisplayName() + " configuration.");
+        }
+        gdbServerProcess = new RemoteProcessHandler(sgrdConfiguration, runConfigurations.getRunFile());
+        RunContentExecutor gdbServerProcessRun = new RunContentExecutor(sgrdConfiguration.getProject(),
+                gdbServerProcess)
+                .withTitle("GDB Server")
+                .withActivateToolWindow(true)
+                .withStop(gdbServerProcess::destroyProcess,
+                        () -> !gdbServerProcess.isProcessTerminated() && !gdbServerProcess.isProcessTerminating());
+        gdbServerProcessRun.run();
+        return super.startDebugProcess(commandLineState, xDebugSession);
     }
 
     @Override
@@ -64,10 +93,11 @@ public class SimpleGdbRemoteDebugLauncher extends CidrLauncher {
             }
         } else {
             String gdbPath;
-            toolchain = CPPToolchains.getInstance().getDefaultToolchain();
-            if (toolchain == null) {
+            CPPToolchains.Toolchain defaultToolchain = CPPToolchains.getInstance().getDefaultToolchain();
+            if (defaultToolchain == null) {
                 throw new ExecutionException("Failed to get default toolchain.");
             }
+            toolchain = defaultToolchain.copy();
             gdbPath = sgrdConfiguration.getCustomGdbBin();
             CPPDebugger cppDebugger = CPPDebugger.create(CPPDebugger.Kind.CUSTOM_GDB, gdbPath);
             toolchain.setDebugger(cppDebugger);
@@ -78,11 +108,23 @@ public class SimpleGdbRemoteDebugLauncher extends CidrLauncher {
         CLionGDBDriverConfiguration gdbDriverConfiguration = new CLionGDBDriverConfiguration(getProject(), toolchain);
         xDebugSession.stop();
 
-        return new CidrRemoteGDBDebugProcess(gdbDriverConfiguration,
+        CidrRemoteGDBDebugProcess debugProcess = new CidrRemoteGDBDebugProcess(gdbDriverConfiguration,
                 remoteDebugParameters,
                 xDebugSession,
                 commandLineState.getConsoleBuilder(),
                 project1 -> new Filter[0]);
+
+        debugProcess.getProcessHandler().addProcessListener(new ProcessAdapter() {
+            @Override
+            public void processWillTerminate(@NotNull ProcessEvent event, boolean willBeDestroyed) {
+                super.processWillTerminate(event, willBeDestroyed);
+                if (gdbServerProcess != null) {
+                    gdbServerProcess.destroyProcess();
+                }
+            }
+        });
+
+        return debugProcess;
     }
 
     @Override
@@ -107,4 +149,5 @@ public class SimpleGdbRemoteDebugLauncher extends CidrLauncher {
         }
         return runFile;
     }
+
 }
