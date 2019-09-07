@@ -164,6 +164,9 @@ public class RemoteProcessHandler extends ProcessHandler {
         cmdLine.add("gdbserver");
         cmdLine.add(":" + sgrdConfig.getGdbPort());
         cmdLine.add(sgrdConfig.getRemoteFolder() + "/" + fileToRun.getName());
+        if (sgrdConfig.getRemoteArguments() != null && !sgrdConfig.getRemoteArguments().isEmpty()) {
+            cmdLine.add(sgrdConfig.getRemoteArguments());
+        }
         return cmdLine.toArray(new String[0]);
     }
 

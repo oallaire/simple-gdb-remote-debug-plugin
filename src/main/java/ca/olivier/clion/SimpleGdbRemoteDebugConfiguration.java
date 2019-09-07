@@ -32,6 +32,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
     private static final String ATTR_HOST = "host";
     private static final String ATTR_USER = "user";
     private static final String ATTR_REMOTE_FOLDER = "remote-folder";
+    private static final String ATTR_REMOTE_ARGUMENTS = "remote-arguments";
 
     private String selectedGdb;
     private String customGdbBin;
@@ -40,6 +41,8 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
     private String host;
     private String user;
     private String remoteFolder;
+
+    private String remoteArguments;
 
     SimpleGdbRemoteDebugConfiguration(Project project, ConfigurationFactory factory, String name) {
         super(project, factory, name);
@@ -63,6 +66,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
             host = element.getAttributeValue(ATTR_HOST);
             user = element.getAttributeValue(ATTR_USER);
             remoteFolder = element.getAttributeValue(ATTR_REMOTE_FOLDER);
+            remoteArguments = element.getAttributeValue(ATTR_REMOTE_ARGUMENTS);
         }
     }
 
@@ -92,6 +96,9 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
         if (remoteFolder != null) {
             element.setAttribute(ATTR_REMOTE_FOLDER, remoteFolder);
         }
+        if (remoteArguments != null) {
+            element.setAttribute(ATTR_REMOTE_ARGUMENTS, remoteArguments);
+        }
     }
 
     @Override
@@ -119,6 +126,9 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
         }
         if (remoteFolder == null || remoteFolder.isEmpty()) {
             throw  new RuntimeConfigurationException("Remote folder not set.");
+        }
+        if (remoteArguments == null || remoteArguments.isEmpty()) {
+            remoteArguments = "";
         }
     }
 
@@ -189,5 +199,13 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
 
     void setGdbPort(String gdbPort) {
         this.gdbPort = gdbPort;
+    }
+
+    String getRemoteArguments() {
+        return remoteArguments;
+    }
+
+    void setRemoteArguments(String remoteArguments) {
+        this.remoteArguments = remoteArguments;
     }
 }

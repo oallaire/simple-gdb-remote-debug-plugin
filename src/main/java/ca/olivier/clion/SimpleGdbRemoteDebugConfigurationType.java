@@ -15,8 +15,8 @@ import javax.swing.*;
 public class SimpleGdbRemoteDebugConfigurationType extends CMakeRunConfigurationType {
 
     private static final String FACTORY_ID = "ca.olivier.simplegdbremotedebug.conf.factory";
-    public static final String TYPE_ID = "ca.olivier.simplegdbremotedebug.conf.type";
-    public static final NotNullLazyValue<Icon> ICON = new NotNullLazyValue<Icon>() {
+    private static final String TYPE_ID = "ca.olivier.simplegdbremotedebug.conf.type";
+    private static final NotNullLazyValue<Icon> ICON = new NotNullLazyValue<Icon>() {
 
         @NotNull
         @Override

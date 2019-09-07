@@ -10,6 +10,7 @@ import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.PasswordFieldPanel;
+import com.intellij.ui.components.JBTextField;
 import com.intellij.ui.components.panels.HorizontalBox;
 import com.intellij.util.ui.GridBag;
 import com.jetbrains.cidr.cpp.execution.CMakeAppRunConfiguration;
@@ -26,11 +27,12 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
     private FileChooseInput sysrootFolderInput;
     private FileChooseInput customGdbBinInput;
     private JComboBox<GdbComboBoxItem> stringGdbComboBox;
-    private TextField gdbPort;
-    private TextField hostText;
-    private TextField userText;
+    private JBTextField gdbPort;
+    private JBTextField hostText;
+    private JBTextField userText;
     private PasswordFieldPanel hostPassword;
-    private TextField remoteFolder;
+    private JBTextField remoteFolder;
+    private JBTextField remoteArguments;
 
     @SuppressWarnings("WeakerAccess")
     public SimpleGdbRemoteDebugConfigurationEditor(Project project,
@@ -61,6 +63,8 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         sgrdConfig.setHostPassword(hostPassword.getText());
 
         sgrdConfig.setRemoteFolder(remoteFolder.getText().trim());
+
+        sgrdConfig.setRemoteArguments(remoteArguments.getText().trim());
     }
 
     @Override
@@ -88,6 +92,8 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         hostPassword.setText(sgrdConfig.getHostPassword());
 
         remoteFolder.setText(sgrdConfig.getRemoteFolder());
+
+        remoteArguments.setText(sgrdConfig.getRemoteArguments());
     }
 
     @Override
@@ -110,15 +116,15 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         panel.add(sysrootPanel, gridBag.next().coverLine());
 
         panel.add(new JLabel("GDB Port:"), gridBag.nextLine().next());
-        gdbPort = new TextField();
+        gdbPort = new JBTextField();
         panel.add(gdbPort, gridBag.next().coverLine());
 
         panel.add(new JLabel("Host:"), gridBag.nextLine().next());
-        hostText = new TextField();
+        hostText = new JBTextField();
         panel.add(hostText, gridBag.next().coverLine());
 
         panel.add(new JLabel("User:"), gridBag.nextLine().next());
-        userText = new TextField();
+        userText = new JBTextField();
         panel.add(userText, gridBag.next().coverLine());
 
         panel.add(new JLabel("Password:"), gridBag.nextLine().next());
@@ -126,8 +132,12 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         panel.add(hostPassword, gridBag.next().coverLine());
 
         panel.add(new JLabel("Remote Folder:"), gridBag.nextLine().next());
-        remoteFolder = new TextField();
+        remoteFolder = new JBTextField();
         panel.add(remoteFolder, gridBag.next().coverLine());
+
+        panel.add(new JLabel("Remote Arguments:"), gridBag.nextLine().next());
+        remoteArguments = new JBTextField();
+        panel.add(remoteArguments, gridBag.next().coverLine());
     }
 
     @NotNull
