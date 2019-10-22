@@ -148,10 +148,14 @@ public class RemoteProcessHandler extends ProcessHandler {
 
             return f.getPath();
         }).collect(Collectors.toList());
-        cmdLine.add(0, "rsync");
-        cmdLine.add(1, "-avh");
+        cmdLine.add(0, sgrdConfig.getSelectedSync());
+        if (sgrdConfig.getSelectedSync().equals("rsync")) {
+            cmdLine.add(1, "-avh");
+        }
         cmdLine.add(sgrdConfig.getUser() + "@" + sgrdConfig.getHost() + ":" + sgrdConfig.getRemoteFolder());
-        cmdLine.add("--delete");
+        if (sgrdConfig.getSelectedSync().equals("rsync")) {
+            cmdLine.add("--delete");
+        }
 
         return cmdLine.toArray(new String[0]);
     }

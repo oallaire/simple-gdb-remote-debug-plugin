@@ -27,6 +27,7 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
     private FileChooseInput sysrootFolderInput;
     private FileChooseInput customGdbBinInput;
     private JComboBox<GdbComboBoxItem> stringGdbComboBox;
+    private JComboBox<String> stringSyncComboBox;
     private JBTextField gdbPort;
     private JBTextField hostText;
     private JBTextField userText;
@@ -50,6 +51,9 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
 
         String customGdbBin = customGdbBinInput.getText().trim();
         sgrdConfig.setCustomGdbBin(customGdbBin.isEmpty() ? null : customGdbBin);
+
+        String selectedSync = stringSyncComboBox.getItemAt(stringSyncComboBox.getSelectedIndex());
+        sgrdConfig.setSelectedSync(selectedSync);
 
         sgrdConfig.setGdbPort(gdbPort.getText());
 
@@ -82,6 +86,14 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         customGdbBinInput.setText(sgrdConfig.getCustomGdbBin());
 
         gdbPort.setText(sgrdConfig.getGdbPort());
+
+        // Check if the selected sync still exists
+        for (int i = 0; i < stringSyncComboBox.getItemCount(); i++) {
+            String item = stringSyncComboBox.getItemAt(i);
+            if (item.equals(sgrdConfig.getSelectedSync())) {
+                stringSyncComboBox.setSelectedItem(item);
+            }
+        }
 
         sysrootFolderInput.setText(sgrdConfig.getSysrootFolder());
 
@@ -118,6 +130,9 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         panel.add(new JLabel("GDB Port:"), gridBag.nextLine().next());
         gdbPort = new JBTextField();
         panel.add(gdbPort, gridBag.next().coverLine());
+
+        JPanel syncPanel = createSyncSelector(panel, gridBag);
+        panel.add(syncPanel, gridBag.next().coverLine());
 
         panel.add(new JLabel("Host:"), gridBag.nextLine().next());
         hostText = new JBTextField();
@@ -220,6 +235,17 @@ public class SimpleGdbRemoteDebugConfigurationEditor extends CMakeAppRunConfigur
         updateCustomGdbState();
         stringGdbComboBox.addActionListener(e -> updateCustomGdbState());
         return customGdbPanel;
+    }
+
+    @NotNull
+    private JPanel createSyncSelector(JPanel panel, GridBag gridBag) {
+        panel.add(new JLabel("Sync:"), gridBag.nextLine().next());
+        JPanel syncPanel = new HorizontalBox();
+        stringSyncComboBox = new ComboBox<>();
+        stringSyncComboBox.addItem("rsync");
+        stringSyncComboBox.addItem("scp");
+        syncPanel.add(stringSyncComboBox);
+        return syncPanel;
     }
 
     private static class GdbComboBoxItem {

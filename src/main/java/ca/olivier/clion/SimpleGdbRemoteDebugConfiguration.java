@@ -27,6 +27,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
     private static final String TAG_SGRD = "sgrd";
     private static final String ATTR_SELECTED_GDB = "selected-gdb";
     private static final String ATTR_CUSTOM_GDB = "custom-gdb";
+    private static final String ATTR_SELECTED_SYNC = "selected-sync";
     private static final String ATTR_GDB_PORT = "gdb-port";
     private static final String ATTR_SYSROOT_FOLDER = "sysroot-folder";
     private static final String ATTR_HOST = "host";
@@ -36,6 +37,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
 
     private String selectedGdb;
     private String customGdbBin;
+    private String selectedSync;
     private String gdbPort;
     private String sysrootFolder;
     private String host;
@@ -61,6 +63,7 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
         if(element!=null) {
             selectedGdb = element.getAttributeValue(ATTR_SELECTED_GDB);
             customGdbBin = element.getAttributeValue(ATTR_CUSTOM_GDB);
+            selectedSync = element.getAttributeValue(ATTR_SELECTED_SYNC);
             gdbPort = element.getAttributeValue(ATTR_GDB_PORT);
             sysrootFolder = element.getAttributeValue(ATTR_SYSROOT_FOLDER);
             host = element.getAttributeValue(ATTR_HOST);
@@ -80,6 +83,9 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
         }
         if (customGdbBin != null) {
             element.setAttribute(ATTR_CUSTOM_GDB, customGdbBin);
+        }
+        if (selectedSync != null) {
+            element.setAttribute(ATTR_SELECTED_SYNC, selectedSync);
         }
         if (gdbPort != null) {
             element.setAttribute(ATTR_GDB_PORT, gdbPort);
@@ -112,6 +118,9 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
                 throw new RuntimeConfigurationException("Custom GDB path not set.");
             }
         }
+        if (selectedSync == null || selectedSync.isEmpty()) {
+            throw  new RuntimeConfigurationException("Sync should be selected.");
+        }
         if (gdbPort == null || gdbPort.isEmpty()) {
             throw  new RuntimeConfigurationException("GDB port not set.");
         }
@@ -136,8 +145,16 @@ public class SimpleGdbRemoteDebugConfiguration extends CMakeAppRunConfiguration 
         return selectedGdb;
     }
 
+    String getSelectedSync() {
+        return selectedSync;
+    }
+
     void setSelectedGdb(String selectedGdb) {
         this.selectedGdb = selectedGdb;
+    }
+
+    void setSelectedSync(String selectedSync) {
+        this.selectedSync = selectedSync;
     }
 
     String getCustomGdbBin() {
